@@ -1,5 +1,5 @@
 import { Router } from "https://deno.land/x/oak/mod.ts";
-import { config } from 'https://deno.land/x/dotenv/mod.ts'
+// import { config } from 'https://deno.land/x/dotenv/mod.ts'
 
 export interface Client {
     name: string;
@@ -10,7 +10,9 @@ export interface Client {
 }
 const router = new Router()
 
-const { BASE_URI, DATA_API_KEY } = config()
+// const { DATA_API_KEY } = config()
+
+const BASE_URI = `https://data.mongodb-api.com/app/${Deno.env.get('DATA_API_KEY')}/endpoint/data/beta`
 
 const connections = {
     collection: 'clients',
@@ -22,7 +24,7 @@ const options = {
     method: "POST",
     headers: {
         'Content-Type': "application/json",
-        'api-key': DATA_API_KEY
+        'api-key': Deno.env.get('DATA_API_KEY') || ''
     },
     body: ""
 }

@@ -1,74 +1,121 @@
 import { Router } from "https://deno.land/x/oak/mod.ts";
-import readJSON from '../jsonMethods/readJSON.ts';
-import writeJSON from '../jsonMethods/writeJSON.ts';
+import { config } from 'https://deno.land/x/dotenv/mod.ts'
+
 export interface Client {
     name: string;
     company: string;
     email: string;
     telephone?: string;
     notes?: string;
-    id: string
 }
-
 const router = new Router()
 
-const { clients } = await readJSON()
+const { BASE_URI, DATA_API_KEY } = config()
 
-router.get('/clients', (ctx) => {
+const connections = {
+    collection: 'clients',
+    database: "client_db",
+    dataSource: 'Cluster0'
+}
+
+const options = {
+    method: "POST",
+    headers: {
+        'Content-Type': "application/json",
+        'api-key': DATA_API_KEY
+    },
+    body: ""
+}
+
+router.get('/clients', async (ctx) => {
+
+    // we need to find all the results
+    const URI = `${BASE_URI}/action/find`
+
+    options.body = JSON.stringify({
+        ...connections
+    })
+
+    // we do a fetch
+    const res = await fetch(URI, options)
+    const data = await res.json()
+
     ctx.response.status = 200
-    ctx.response.body = clients
+
+    ctx.response.body = data
 })
 
-router.get('/clients/:id', (ctx) => {
+router.get('/clients/:id', async (ctx) => {
 
     const { id } = ctx.params
 
-    const clientFound = clients.find(client => client.id === id)
+    const URI = `${BASE_URI}/action/findOne`
 
-    if(!clientFound) return
+    options.body = JSON.stringify({
+        ...connections,
+        filter: {
+            _id: {
+                "$oid": id
+            }
+        }
+    })
+
+    const res = await fetch(URI, options)
+
+    const data = await res.json()
+
+    if(!data) return
     ctx.response.status = 200
-    ctx.response.body = clientFound
+    ctx.response.body = data
 })
 
 router.post('/clients', async (ctx) => {
 
-    const body = ctx.request.body()
+    const bodyData = ctx.request.body()
 
-    const data: Client = await body.value
+    const newUser: Client = await bodyData.value
 
-    const newUser = {
-        ...data,
-        id: globalThis.crypto.randomUUID()
-    }
+    // we what to insert
+    const URI = `${BASE_URI}/action/insertOne`
 
-    clients.push( newUser)
+    options.body = JSON.stringify({
+        ...connections,
+        document: newUser
 
-    await writeJSON(clients)
+    })
+
+    const res = await fetch(URI, options)
+    const data = await res.json()
 
     ctx.response.status = 200
-    ctx.response.body = newUser
+    ctx.response.body = data
 })
 
 router.put('/clients/:id', async (ctx) => {
     // get the id by params
     const { id } = ctx.params
 
-    const clientFound = clients.find(client => client.id === id)
+    // we what to update
+    const URI = `${BASE_URI}/action/updateOne`
 
     // I get the body
     const body = ctx.request.body()
-    const data: Client = await body.value
+    const dataClient: Client = await body.value
 
-    if (!clientFound) return 
+    options.body = JSON.stringify({
+        ...connections,
+        filter: {
+            _id: {
+                $oid: id
+            }
+        },
+        update: {
+            $set: dataClient
+        }
+    })
 
-    // I update the changes
-    clientFound.name = data.name
-    clientFound.company = data.company
-    clientFound.email = data.email
-    clientFound.notes = data.notes
-    clientFound.telephone = data.telephone
-
-    await writeJSON(clients)
+    const res = await fetch(URI, options)
+    const data = await res.json()
      
     // I response to the client
     ctx.response.body = data
@@ -80,19 +127,22 @@ router.delete('/clients/:id', async (ctx) => {
     const { id } = ctx.params
     console.log(id);
     // I found the client in my arrays of clients
-    const clientFound = clients.find((client) => client.id === id)
+     // we what to update
+    const URI = `${BASE_URI}/action/deleteOne`
 
-    console.log(clientFound);
-    if (!clientFound) return
-    
-    const idx = clients.indexOf(clientFound)
+    options.body = JSON.stringify({
+        ...connections,
+        filter: {
+            _id: {
+                $oid: id
+            }
+        }
+    })
 
-    clients.splice(idx, 1)
-
-    await writeJSON(clients)
-    
+    const res = await fetch(URI, options)  
+    const data = await res.json()
     ctx.response.status = 200
-    ctx.response.body = clients
+    ctx.response.body = data
 })
 
 export default router

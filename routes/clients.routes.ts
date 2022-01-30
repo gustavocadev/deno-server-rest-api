@@ -12,7 +12,7 @@ const router = new Router()
 
 // const { DATA_API_KEY } = config()
 
-const BASE_URI = `https://data.mongodb-api.com/app/${Deno.env.get('DATA_API_KEY')}/endpoint/data/beta`
+const BASE_URI = `https://data.mongodb-api.com/app/${Deno.env.get('APP_ID')}/endpoint/data/beta`
 
 const connections = {
     collection: 'clients',

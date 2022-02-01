@@ -141,8 +141,17 @@ router.delete('/clients/:id', async (ctx) => {
         }
     })
 
-    const res = await fetch(URI, options)  
+    await fetch(URI, options)  
+    // const data = await res.json()
+
+    // get all the clients again
+    const URI2 = `${BASE_URI}/action/find`
+    options.body = JSON.stringify({
+        ...connections,        
+    })
+    const res = await fetch(URI2, options)
     const data = await res.json()
+
     ctx.response.status = 200
     ctx.response.body = data
 })
